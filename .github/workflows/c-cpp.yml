@@ -22,4 +22,4 @@ jobs:
     #- name: make distcheck
     #  run: make distcheck
     - name: compile
-      run: gcc -o wav2tzx wav2tzx.c
+      run: cd src && gcc -o wav2tzx wav2tzx.c
