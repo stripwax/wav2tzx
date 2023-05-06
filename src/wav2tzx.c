@@ -965,7 +965,7 @@ else													// SECOND Speedlock turbo block
 	for (n=0; n<posbyte-1; n++) totalcheck^=temp[n];	// Calc checksum
 	// Last block will be saved later in SaveTZX with the correct Pause value and no mid-SYNC ...
 	totallen+=posbyte;
-	if (totalcheck==temp[posbyte-1]) totalcheck='�'; else totalcheck='�';
+	if (totalcheck==temp[posbyte-1]) totalcheck='\xfb'; else totalcheck='\xf9';
 	printf(" Speedlock %d block 2 Total                               B%d L-%5d C%c ",slock,posbit,totallen,totalcheck);
 	}
 block++;
