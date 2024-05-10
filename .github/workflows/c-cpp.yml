@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest       
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: compile
       run: cd src && gcc -o wav2tzx wav2tzx.c
 
@@ -21,9 +21,9 @@ jobs:
     runs-on: windows-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Set up MinGW
-      uses: egor-tensin/setup-mingw@v2
+      uses: e-t-l/setup-mingw@patch-1
       with:
         platform: x64
     - name: compile
@@ -34,6 +34,6 @@ jobs:
     runs-on: macos-14
     
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: compile
       run: cd src && gcc -arch arm64 -arch x86_64 -x c -o wav2tzx wav2tzx.c
