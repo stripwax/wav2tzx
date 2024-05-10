@@ -29,11 +29,11 @@ jobs:
     - name: compile
       run: cd src && gcc -o wav2tzx wav2tzx.c
 
-  build_macosx_intel:
+  build_macos_universal:
   
-    runs-on: macos-latest
+    runs-on: macos-14
     
     steps:
     - uses: actions/checkout@v3
     - name: compile
-      run: cd src && gcc -o wav2tzx wav2tzx.c
+      run: cd src && gcc -arch arm64 -arch x86_64 -x c -o wav2tzx wav2tzx.c
