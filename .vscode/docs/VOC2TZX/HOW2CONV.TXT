@@ -1,0 +1,120 @@
+
+                   HOW TO CONVERT A TAPE TO ZXTAPE FORMAT
+                  ----------------------------------------
+
+  First of all you will probably need some knowledge on how the data is stored
+on the tapes (or in the .VOC files) since without it you would not understand
+how the switches work...
+  Basically the data on the tape is stored as pulses of different frequencies.
+The spectrum rom save routine stores two pulses of 855 Z80 Clock Cycles for the
+bit 0 and two pulses of 1710 Z80 Clock Cycles. Which means that bit 0 takes
+exactly half the time to load in as bit 1 does.
+  But for Spectrum to be able to read that data it has to know when to start
+reading it. Therefore there is a Pilot signal preceeding the data which has
+some 8000 pulses of somewhat smaller frequency infront of the data. After
+the pilot signal there are two SYNC pulses, which are considerably smaller
+(or with higher frequency) so the spectrum knows that now it has to start
+loading the data.
+  Basically it all looks like this (when you look at the .VOC file) :
+
+_____-----_____-----_____-----_-____----__--__--____----____----...
+
+______________ ______________| |________________ _______________...
+              V               V                 V
+         PILOT pulse       SYNC1,2        DATA (10011...)
+
+  So one Pilot pulse is _____ (or -----) , SYNC pulses are _ and - , Bit 0 of
+Data is __-- and Bit 1 of Data is ____---- . There might ofcourse be some
+minor differences (which is the reason for the switches ;)) .
+  The actual amplitude of the signal is not important (it doesn't matter if the
+bit 0 is --__ or __--  ... ) .. only the frequency (or the "wave length") is
+important.
+
+  This is how Spectrum ROM routine does it, and normally all Turbo loaders do
+it in the same way, only the timings are different (the frequency is bigger).
+
+  Because not all tapes are in a perfect condition and because some tapes have
+a lot of noise between blocks and ofcourse are therefore harder to convert, I
+have included a series of switches that will help when recognising the tape.
+
+  First of all it is best to sample the tape at highest possible sample rates.
+The best result is achived with over 40kHz. You can use any sampling program
+you want, but if you can, then use READSB or READVOC of the registered Z80
+emulation package, since it does some very basic filtering which helps with
+conversion.
+
+  Here is what you should do when some problems are encountered:
+
+- There are Checksum errors on most of the blocks (C.)
+
+  Use /ignore switch... it should help. NOTE though that many turbo loaders
+don't use the checksum and therefore it should be intentionally not right !
+(like Alkatrazz loaders). The checksum is what the ROM save routine puts as
+the last byte in the data ... it is XOR of all previous bytes.
+
+- There are frequent Last Bytes with LESS than 8 bits converted (B1 or similar
+  is shown)
+
+  Again use /ignore switch. There MIGHT be some loaders that need less than 8
+bits in Last Byte (the B part on the screen), but I haven't found them so far.
+So if the game works with the /ignore switch then it is OK.
+
+  In the next releases I might rename this to /noignore (and flip its behaviour)
+since it is more usefull to always ignore the additional bits.
+
+- The conversion splits some blocks when there should be only one block. i.e.
+  You get A LOT of little blocks that don't make much sence
+
+  The problem is that the algorythm thinks it is end of the block, when it
+really isn't. The only switch that can correct this is /end . Use values of
+80 - 95 and one should work.
+  Sometimes the problem isn't in splitted blocks, but there is some noise
+being recognised as PILOT tones... use /pilot 1000 or even higher (upto 2000)
+when this happens.
+
+- The conversion 'glues' two or more blocks together.
+
+  Well, again, the same problem, only in the different direction... use /end
+with values lower than 70 ... somewhere between 51 and 65 should do the job!
+
+- The block gets converted OK, but then it just stops loading after the PILOT
+  tone. (i.e. the pilot tone is recognised but no data is loading).
+
+  The problem are the incorrect Sync pulses. The algorythm gets them sometimes
+wrong. Use /sync  switch to correct the problem !
+
+- The block gets converted wrong (i.e. loading picture is garbled, ...) and
+  the /ignore switch doesn't help
+
+  There are many reasons for this. The best way is to use one of these two
+switches (or both of them together!) : /alter  and  /middle   ... they should
+help !
+  If they don't help then try using /diff  switch with values at around 45 - 49,
+which sometimes does the trick.
+  If the block uses ROM timings only then try using /rom  switch !
+
+- Some blocks don't get recognised at all, or their Pilot tones are too short.
+
+  Use /maxp switch with values either lower than 30 or higher than 40 ... it
+depends on each case. It sometimes helps. If the pilot tones should be
+actually shorter than 50 pulses then use /pilot switch with value less than 50.
+(this is almost never the case).
+
+- The blocks (normally in Alkatrazz loader) get converted OK, but the pilot
+  tone is too short to be replayed successfully to the real spectrum.
+
+  Use /force with values around 3000 to correct this problem. NOTE: this is
+normally not needed for emulators, but somehow it does the job for the ZX.
+
+- The blocks get recognised as CUSTOM Loading (with an * infront) when they
+  are really Standard loading blocks.
+
+  Use /std  switch with values higher than 30 (around 40-50 should help) ...
+don't over do it or some real Custom loading blocks might be converted as
+Standard ones !
+
+  If none of the above tips help then load the .VOC file to an editor (such as
+CoolEdit or GoldWave for Win95) and clean the spaces between blocks or make
+bigger pauses between them... This should help out when the /end  switch can't
+help.
+                                                                              TC
