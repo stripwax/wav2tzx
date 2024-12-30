@@ -787,13 +787,13 @@ do	{
 	if (plen+lplen<hp0)
 		{ plen+=lplen; lplen=GetPulse(); plen+=lplen; lplen=GetPulse(); }
 	// If bleeploader is used then first block is Program: !
-	if (bleep && posbyte>18 && block==0 && !strcmp(CheckSum(posbyte),"� ")) goto out;
+	if (bleep && posbyte>18 && block==0 && !strcmp(CheckSum(posbyte),"\xfb ")) goto out;
 	// If /end parameter is specified then look if difference between
 	// the two read half-periods is greater or equal to specified one
 	if (difend && (Diff(plen,lplen)>=TRES_END)) goto out;
 	// if no /end parameter is specified look if either one of the
 	// read half-periods is greater than 1.4*half-period of bit 1
-//	if (posbyte>18 && block==0 && !strcmp(CheckSum(posbyte),"� ")) goto out;
+//	if (posbyte>18 && block==0 && !strcmp(CheckSum(posbyte),"\xfb ")) goto out;
 	if (!difend && ((plen>(int) (1.4*hp1)) || (lplen>(int) (1.4*hp1))) && !slock1flag) goto out;
 	if (!middle)	hpt=(int) (((double) (plen+lplen)+0.5)/2.0);
 	else 			hpt=(int) (0.5 +((double) (plen+lplen))/2.0);

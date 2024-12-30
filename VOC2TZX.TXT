@@ -1,0 +1,438 @@
+
+                             ZXTape Utilities
+                           --------------------
+                      VOC to TZX (or TAP) Convertor
+                                   v0.54b
+                  by Tomaz Kac and Martijn van der Heide
+
+         Speedlock(tm) Information and Timings by Stefano Donati
+
+
+  Welcome to the newest conversion utility for your belowed ZX Spectrum. This
+utility was coded to support the new ZX Tape format that is being developed on
+comp.sys.sinclair. It basically automagically converts the 8 bit mono .VOC
+samples of Spectrum tapes to either .TZX (or .TAP) format. .TAP files should
+only be used for the non-turbo loading tapes and only the ones with ROM load
+routines.
+  From version 0.53b on the Amstrad CPC tapes are also totally supported. Use
+the /cpc command line option to create these tapes (the filename extension is
+.CDT, otherwise these files are totally compatible with .TZX).
+
+     !!! READ the HOW2CONV.TXT file for some pointers on Converting !!!
+
+  It seems the best results are achieved when using the READVOC utility of
+the registered Z80 emulation package to sample the .VOC files, because it does
+some 'filtering' to the file (it makes the rectangular shape pulses). If you
+are using other sound sample software then use sample frequencies of 44.1kHz and
+try highest possible volume rates possible (but the sound must still stay clear,
+without distortion).
+
+  For now I have been able to convert all of mine normal and turbo loading
+games with this utility. But there are some cases when this program can not
+help you, probably because a tape is either too damaged or because my
+algorythm for conversion is too simple or some non-supported protection scheme
+was used...;).
+  As of version 0.5 ALL Types of SPEEDLOCK protection are supported. This
+means that majority of the later copy-protected games are now convertable.
+Please look towards the end of the document for the description on each
+Speedlock type.
+
+  First try the .VOC file on the real ZX Spectrum or one of the emulators
+that support these files, so you can be absolutely sure that this program is
+the cause of error. The program has some command line switches that may help
+you to better convert a tape, so please try everything before contacting me
+(ok, not everything , since that would probably take ages) ... Also don't report
+that some protection schemes don't work (altought the majority of the well-known
+protection schemes work now), I know they don't ;) PLEASE read the HOW2CONV.TXT
+file which should solve most of beginners problems !
+
+  For now the program is able to detect any kind of turbo loader that has a
+PILOT tone (default length is 50 pulses, but can be changed) , 2 SYNC pulses
+(for now it HAS to have the sync) and Data (atleast one bit of information).
+The pause between blocks can be anything (the program can handle blocks that
+follow directly one another (NO pause at all)). Any rubbish (static) in the tape
+itself is handled quite fine with the convertor, so you don't need to 'clean up'
+the .VOC file before you use it. However if the static is too close to the
+Data End it might interfere with the conversion.
+
+  For the info on how to recognise and convert tapes with some certain
+protection scheme please look toward the end of the document.
+
+  Here are all the command line switches for the program :
+
+/tape    - Make .TAP file instead of .TZX (which is default) - this will NOT
+           save ANY speed and pause information of the tape !!! Only the Data
+           of each block is saved...
+/cpc     - Make an Amstrad CPC .CDT tape file. This will only do three things:
+           1) Add the 'Hardware Info' block at the beggining of the tape with
+              the Amstrad CPC 464 as the Computer (change it with some other
+              tool to the appropriate Model).
+           2) Write the correct Filenames of the CPC Header blocks. Only first
+              12 characters (of 16 possible) will fit on the screen though.
+           3) The Filename extension will be .CDT and not .TZX !
+           When converting CPC tapes it is advisable to use /maxp 20 command
+           line option, because the difference between the SYNC pulses and the
+           PILOT pulses are much smaller !
+/ignore  - Ignore LAST BYTE if it has less than 8 bits. This is handy because
+           the algorythm can not always distinguish when to end the recognition
+           and will probably add some bits at the end of data (normally when the
+           /end switch is used with the number more than 60) ... with this
+           switch all this extra bits will be ignored and in most cases the
+           file will be OK (you can see this in the Checksum of the block).
+           Use if you get frequently values lower than 8 in the LAST BYTE
+           section (B). This is very usefull on standard loaders.
+/rom     - Use ROM timings for 0 and 1 bit. This should be used if the tape
+           only uses NORMAL speed blocks (though it will recognise them OK
+           without this switch) or if there are errors in the conversion even
+           after you used the next four switches :
+/noaprox - This option will DISABLE the ability to make Bit 1 Half-period almost
+           exactly twice the bit 0 half-period. Since this correction is almost
+           always needed it is by default turned on. Hopefully this will work
+           OK and you wont need to do /noprox. Some loaders have signal for bit
+           1 more than twice bigger than bit 0... you will need the /noaprox
+           option for these loaders. Although I NEVER needed this switch so far.
+/maxp n  - Maximum difference between two half-periods of the PILOT signal.
+           The value is in percent (%) and it means how big can be the
+           difference between two half-periods to recognise it as the PILOT
+           signal. Default is 35 (%).. Use a bigger value if the pilot signals
+           are not being detected well. But you wont have to change this one
+           often since it is not so important.
+/diff n  - Minimum difference between 0 and 1 half-period.
+           This one is used when trying to recognise which half-period is used
+           for 0 bit and which for 1 bit. It is in perecent (%). The default
+           value is 30 and it means the 0 bit half-period is at least
+           30% smaller than the 1 bit. Use this if you get errors in the data,
+           normally a value of 45 is better for old tapes or when the sampling
+           rate of .VOC file was very low (from 10-20 kHz). Again, this one is
+           VERY rarely needed.
+/end  n  - Minimum difference between two half-periods of data block to END
+           the block.  This one is used in converter to recognise when the end
+           of one block is reached. The spectrum makes a pulse with first
+           half-period around 50% smaller than the second one. Most times value
+           of 80 helps ... most of the times when you get Checksum errors you
+           get them because the converter got some extra bits at the end...
+           by lowering this number to 50-55 you can make it better, but then
+           you can also get a shorter block ...:) As default the algorythm
+           uses a different approach to determine the end of block... when
+           encounters a half-period which is bigger than 1.4*half-period of
+           bit 1. When you specify this option the algorythem uses the
+           difference between two half-periods to end the block... Anyway, if
+           you get frequent SMALL blocks use higher values (around 85) and this
+           will probably make it better.
+/pilot n - Minimum number of pilot pulses to recognise it as PILOT tone.
+           The 'n' is this time in pulses. It tells you how many pulses must
+           be read (or recognised) to use it as a PILOT tone. the default of
+           50 pulses is OK for most non-standard blocks (StarStrike II uses
+           around 250,  NORMAL speed blocks have around 3000 - 6000) ... use
+           a bigger value if you get MANY non-pilot tones recognised as pilot
+           tones. (normally use a value around 1000 in that case)
+/std   n - Maximum Difference between the Timings that are recognised and the
+           Standard ones, for tem to be considered Standard Timings.
+           Default value is 20 (%). When the program tries to determine if one
+           block uses standard values for loading (i.e. Half Periods of Pilot,
+           Sync, 0 and 1 bit pulses, Length of Pilot tone, standard Pause
+           between blocks) it calculates the difference between the Standard
+           values and the ones that were recognised (all Half-periods are a
+           middle value of all half-periods read from the block). If the value
+           is smaller or equal to this setting then it is considered to be
+           standard value, otherwise it writes a special block that says that
+           value has been changed (for .TZX files). If you are 100% sure that
+           tape uses ALL timings as STANDARD timings then write 100 here :)
+           Otherwise a little bigger (around 30) values might be better.
+           The biggest problem could be SYNC pulse, which will sometimes have
+           a much different value than the standard one... Therefore the
+           Standard block is identified ONLY with the timings of PILOT, 0bit,
+           1bit and length of the PILOT tone. If one or more of these values
+           aren't in the bounds of standard values then it is considered
+           Custom Loading block and all timings are saved then.
+/force n - This will force the Length of Pilot tone (in half-periods) to n.
+           Handy for when the pilot tone has to be somewhat longer... but
+           otherwise not too useful :) This will only effect Custom Loading
+           blocks (i.e. ALL custom loading blocks will be saved with pilot
+           length 'n'... though on the screen will be the value that was
+           recognised...). Use this option on Alkatrazz protected games with
+           3000 as the pilot length.
+/bleep   - The tape uses Firebird's BLEEPLOAD protection. This was a common
+           protection that Firebird used for its games. Games like Thrust II,
+           Dark Sceptre, Black Lamp,... used this protection.
+/alter   - Use alternative way to recognise bit 0 or bit 1 pulses ... Use this
+           if there are some mistakes in the data block... it might help when
+           the tape was in a not so perfect condition. (so far it helped on
+           StarBike).
+/sync    - Will Force SYNC values of Custom loading blocks to be the same as
+           the ones of the Standard loading blocks. This is VERY handy in the
+           cases that SYNC values get recognised too much off as they should be
+           (normally because of very LOW sample rates - around 20kHz) ...
+           Use this option when a block doesn't even begin to load or if the
+           block is not loaded correctly...
+/middle  - Use Middle value of Bit 0 and Bit 1 pulse to recognise blocks.
+           This might improve the recognition of a block if it was a bit messed
+           up. This is the same algorythm that TAPER uses to recognise blocks.
+           Use it when you get garbled loading screens, errors in some blocks,..
+/slock1 n  Use SPEEDLOCK Type 1 Variant n  algorythm for conversion.
+           Look below for the description of these schemes.
+             Variants:
+               1 - Only TWO turbo loading blocks are present
+               2 - More than TWO turbo loading blocks
+/slock2    Use SPEEDLOCK Type 2  algorythm for conversion.
+/slock3 n  Use SPEEDLOCK Type 3 Variant n  algorythm for conversion.
+             Variants:
+                1 - Red/Black  decryption stripes
+                2 - Multicolor decryption strieps
+/slock4    Use SPEEDLOCK Type 4  algorythm for conversion.
+/slskip n  Skip n blocks to get to first Speedlock TURBO block
+           Use this option if there are more (or less) normal loading blocks
+           before the first turbo loading block than what is the default value.
+           Here are the default values for all 4 speedlocks :
+             Speedlock 1 :  2 blocks (only BASIC)
+             Speedlock 2 :  4 blocks (two BASICs)
+             Speedlock 3 :  4 blocks (one BASIC and one BYTES)
+             Speedlock 4 :  2 blocks (only a LONG Basic)
+/diload   Use the Digital Integration Loader algorythm
+
+ The utility outputs a list of all blocks it encounters in the following format:
+
+*           If the first character is '*' then this block is Custom Loading
+X:Name      Where X is one of P:Program, B:Bytes, N:Num. Array, C:Char. Array
+            the Data block have this field filled with '-' characters
+            When using CPC tapes then only 12 chars of the name will appear !
+P-xxxx,yyyy PILOT tone, with the half-period of xxxx Z80 T-States and Length
+            of yyyy half-periods
+S-xxxx/yyyy SYNC pulse with the first half period of xxxx and second of yyyy
+            T-States
+0-xxxx      Bit-0 half period in T-States
+1-xxxx      Bit-1 half period in T-States
+F-xx        The Flag byte (first byte of data) in Hex (all Others are Dec)
+Bx          Last Byte of Data has x bits used
+L-xxxxx     The length of Data in the block
+Cx          The checksum of the data - OK (checked) or not (.)
+P-x.xxx     The PAUSE after the block in seconds
+
+  Unfortunetly I had to do this program in a hurry and therefore it has some
+disadvantages... the biggest one is that the WHOLE .VOC file must fit in the
+memory (yes, I KNOW I could do it without this, maybe in one of the next
+versions ?) ... so if the .VOC file is 13MB big then you have to have 13MB
+of memory free :( Thereofore it is handy to have atleast 16MB of memory for
+files which have been saved with sample frequency of more than 40kHz.
+  If you want to compile this program on some other OS than DOS then email me
+and I will send you the source... it is fairly standard so there should not
+be any problems porting it to other compilers (I used Watcom 10.0) ...
+
+  The file HOW2CONV.TXT explains many things to consider when converting a
+tape and you should read it before you attempt to convert some tapes.
+
+Protection schemes supported by this program:
+
+BLEEPLOAD (Firebird)
+--------------------
+  You will recognise the BleepLoader by these things: It always writes the name
+of the game on the screen after the Basic block is loaded. After the basic there
+is another CODE block and then the BleepLoad follows, which is loading Small
+blocks (of size around 250 bytes) with a very small Pilot tone and writes the
+block number in HEX on the screen (like : LOADING 1F) ... if there was an error
+you can reload the block with the error. There are always 2E blocks before the
+picture and around 8E blocks after it (this might vary for different games
+ofcourse). Just use the /bleep switch to convert this kind of protected tape.
+
+ALKATRAZ
+--------
+  The Alktatraz protection scheme uses almost standard tape encoding and
+therefore it is no problem to convert. This is how you recognise the game
+which uses this protection:
+- The Program: prompt is NOT displayed when the basic block loads in. Instead
+  only some 5 letters of the filename are displayed AT 1,1 position.
+- After the basic loads in a turbo-loaded block will load in ...
+- Then there is pause (some rubbish on the tape) for about 12 seconds
+- It then starts loading screen in some custom fashion (very nice ;) ) and the
+  border stays black while it does this. The pilot tone of this block is
+  VERY small (around 240 pulses) so use /force 3000 to simulate the rubbish and
+  the block will load in (otherwise it won't) !
+- After the screen is shown the rest of the block will load in with the counter
+  counting down (with the scrolling numbers) ... border still stays black
+
+SPEEDLOCK Type 1
+----------------
+  This one is the first Speedlock protection. Used in the most very old tapes,
+like Fighter Pilot and Ghostbusters. The loading itself looks like normal
+loading, but with a higher speed and with one distinct give-away... the so
+called "CLICKING" Pilot tone. Which means that the pilot tone of the turbo
+loading blocks has some distortions in it and therefore it does repeated
+clicks while it loads. As I said the color stripes when loading are the same
+as standard ones. Speedlock Type 1 protection has only ONE medium sized BASIC
+block and then the two or sometimes more turbo loading blocks follow.
+The first turbo block has the size of 18 to 22 bytes (it differs) ,
+the socond is either only 6913 or full 48k long, if it is 6913 long then it
+means there are MORE blocks to follow... use variant 2 for this. !
+It is good if the CHECKSUM's of these tapes are OK, but sometimes they don't
+have to be. AND there don't have to be 8 bits in the last BYTE for it to
+work either. Anyway, if /ignore or /alter or /middle will help then use them!
+There will also be shown the specific FLAG bit set for each Speedlock 1 block,
+because they are different in many situations. All other Speedlocks have a
+fixed FLAG bit set (111010)...
+  Use /slock1 n option to convert it, where n is the Variant :
+
+1 - Only TWO turbo loading blocks (the second is VERY big)
+2 - MORE Than two turbo loading blocks (the second is 6913 bytes long)
+
+  There are sometimes MORE than 1 BASIC block in Speedlock 1 ... if this
+is the case then use the option /slskip 4  to tell the algorythm that it
+should skip 4 blocks instead of 2 to get to the first turbo block.
+
+SPEEDLOCK Type 2
+----------------
+  This is a successor of Type 1 and most importantly it features the same
+"Clicking" pilot tone of the turbo loading blocks. The loading stripes of the
+turbo loading blocks are of two types... either NORMAL (like Type 1) or
+RED/BLACK for pilot signal and BLUE/BLACK for the Data... It has a very short
+BASIC block and a medium sized CODE block (Bytes:) ... The biggest difference
+for conversion is that the last block is made from many Sub-Blocks (look at the
+description in Type 3). Use /slock2 option to convert these tapes. The first
+turbo loading block is very small, the second is normally very large (48k) ...
+ALL Checksums of these blocks MUST be OK for them to load in, so use /alter and
+/middle if they will help ! The last Byte does NOT need all 8 bits for it to
+work !
+
+SPEEDLOCK Type 3
+----------------
+  You will recognise this protection scheme by its very SHORT BASIC block and
+a very LONG (around 8k) CODE (Bytes:) block. After it the decryption stage
+follows for around 25 seconds. During this stage the border flashes either
+with red/black stripes or multicolor (all colors) stripes. Depending on this
+the variation 1 and 2 are recognised. During this stage when the border flashes
+the noise is heard from cassette recorder. In order for variation 2 to work this
+noise MUST be present ! Variation 1 doesn't need the noise from the cassette.
+After this stage the two turbo saved (and very encrypted) blocks follow:
+- First block - loading stripes are red/black for pilot tone and blue/black for
+  for data. This block is VERY short (around 200-300 bytes).
+- Second block - the same loading stripes as first block, but it is all 48k or
+  even more (for 128k games) long. This block has also many sub-blocks which
+  have a special SYNC pulse between them.
+  When the loading picture pops on the screen then the Border goes to BLACK and
+  the loading timer starts its countdown. (in the format  1m32s10 ).
+The loading speed is very high (around 160% of the original)...
+
+  To convert this type use /slock3 n   command line switch, where the n is
+variation :
+  1 - Red/Black decryption stage stripes in the border
+  2 - Multicolor               -||-
+
+  When the second (multicolor) variation will be converted the Pure Tone block
+will be inserted after the CODE block, which will simulate the noise that has
+to be present for the decryptors to work.
+  The conversion will show its progress on the screen. The second block is made
+from many sub-blocks. Each sub-block will be shown on the screen with its size.
+Normally first two sub-blocks have the sizes 6144 and 768 ... others vary.
+  For the file to be loaded back succesfully BOTH checksums (from the first
+block and from the TOTAL second block) must be OK .. If they are not then use
+one of the following switches: /middle  ,  /alter  ,  /ignore .  One of them
+will probably work. Otherwise try re-sampling the tape at higher frequency !
+
+SPEEDLOCK Type 4
+----------------
+  This is VERY similar to Type 3 ... the differences are the following :
+- Only ONE BIG (around 4k) BASIC block (NO CODE (Bytes:) blocks ..)
+- There is almost NO pause between the BASIC block and the first turbo block
+  (i.e. the turbo block follows almost immediately - after 1-3 seconds)
+- The loading is somewhat slower ... (around 116% of the original speed)
+Everything else is the same as Type 3 (the loading colors, countdown timer,...)
+  Also there is only one variation of this type...
+  To convert Speedlock Type 4 tapes (most common protection) use the :
+/slock4  switch.
+  Because of the lower speed, the SYNC pulses between the sub-blocks of the
+second turbo block cannot be always detected ... therefore the Checksum of the
+total of the second block does NOT need to be correct in most of the casses,
+but if it is correct then you are sure it is OK. Also because of this the
+/ignore  switch will NOT do the job in many cases, so please DO NOT use it for
+Speedlock type 4 tapes! The /alter and /middle   switches will probably help
+out, so use them if there are errors ...
+
+  I would like to thank Stefano Donati ( krypton@mbox.vol.it ) for all the help
+on Speedlocks... great stuff!
+
+
+DIGITAL INTEGRATION LOADER
+--------------------------
+  This one was used only in the later Digital Integration games (like ATF,
+TT Racer, ...) and since I only got these two the algorythm is based on them.
+
+  Basically the loader has a MUCH higher pitched PILOT tone , followed
+immediately by a short normal PILOT tone and then followed by the data.
+There are two blocks like this following the one BASIC block. The DATA is
+loaded in with a much greater speed (almost 200%) , first block is some 6k
+long and the second block is all 48k long. The border stripes while loading
+are multicolor (in a nice rainbow order :) ) ...
+  Unfortunetly these games have also a manual or lenslok protection after they
+have been successfully loaded in ...
+
+
+HISTORY: 0.3b  - * First Public Release
+         0.35b - * Bug Fixes - conversion of MANY more files shouls go
+                 * Added /sync switch, should help with blocks that wouldn't
+                   load before.
+         0.36b - * Added /middle switch which will enable the recognition using
+                   the middle value of bit 0 and bit 1 pulse
+                 * Added HOW2CONV.TXT file which should solve a lot of problems!
+         0.37b - * Changed the conversion algorythm to handle some small
+                   mistakes in .VOC files...XECUTOR now converts well and so
+                   should many others.
+         0.40b - * Not released (Early beta stages of Speedlock Type 3 & 4)
+         0.41b - * Some bugs were removed ... and
+                 * SPEEDLOCK Type 3 and 4 works (almost) perfectly now...
+                   Both variants of Type 3 are supported. Also the Checksum
+                   works.
+                 * Removed ANSI stuff (bold text).
+         0.5b  - * Added SPEEDLOCK Type 1 and 2 ... works perfectly :)
+                 * Added /slskip n  option so you can convert the tapes which
+                   have more (or less) blocks before turbo ones.
+         0.51b - * Added Digital Integration protection scheme
+         0.52b - * There was a bug in 0.5b which I forgot to mention in the 0.51
+                 * A minor bug with Speedlock 2,3,4 SubBlock recognition removed
+                 * Changed the definition of Speedlock Type 2 slightly
+                 * The /sync was mis-spelled in the TXT file as /fsync option.
+         0.53b - * Added support for Amstrad CPC tapes with the /cpc switch.
+                 * VOC files with Block 09 (created with GoldWave) are now
+                   handled correctly (this block is used when freq > 22050 Hz).
+                 * The Unknown blocks in VOC files are skipped properly now.
+                 * The 'Unexpected End-Of-File' warning is not shown anymore.
+	 0.54b - * There was still a little bug when handling Block 09 ... now
+                   the correct Frequency is used !
+
+
+  There is an utility being developed that will replace ALL ZXTape utilities in
+the very near future. It is called TAPER and it has all features that VOC2TZX,
+PLAYTZX and other conversion tools have. And, besides that, it has a VERY
+user-friendly interface so it can be used by basically anyone... Please check
+out the following home page for the latest version of TAPER :
+
+http://www.worldofspectrum.org/
+
+  Or contact Martijn Van Der Heide (m.vanderheide@worldofspectrum.org) for more
+information on TAPER.
+
+  Also thanks to EVERYONE else who contributed to development of the new ZXTape
+format and to anyone that will actually implement it in the emulators/utilities,
+and anyone that sent me or made available the .VOC files which improved this
+utility very much !
+
+  And BIG thanks to Andrew David Baker ( ca4aba@isis.sunderland.ac.uk ) for all
+the .VOC files he made available for me to download from his great Web Page
+( http://osiris.sund.ac.uk/~ca4aba/snaps.html )... without them this utility
+would support far less protections and tapes !
+
+  The biggest collection of .VOC and .TZX files for use with this utility and
+PLAYTZX proggy can be obtained from the new official TZX format homepage :
+
+http://www.worldofspectrum.org/
+
+  There is also always the newest revision of ZX Tape (TZX) format and these
+utilities (together with some other stuff)!
+
+  I hope you can successfully convert MANY old tapes with this utility !
+
+  Unfortunetly this utility has been discontinued. If you are unable to
+convert some of your tapes then please get the (still in development) utility
+called MakeTZX by RAMSoft from the World of Spectrum.
+
+Regards,
+  Tomaz    (tomcat@sgn.net)
+                                                                            TC
