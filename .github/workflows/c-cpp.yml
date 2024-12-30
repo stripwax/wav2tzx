@@ -16,7 +16,7 @@ jobs:
     - name: compile
       run: cd src && gcc -o wav2tzx wav2tzx.c
 
-  build_win32:
+  build_win_x64_mingw:
   
     runs-on: windows-latest
 
